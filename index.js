@@ -5,7 +5,7 @@ function getExt(node) {
 }
 
 module.exports = function(babel) {
-  var styleName = null;
+  var className = null;
   var style = null;
   var specifier = null;
   var randomSpecifier = null;
@@ -46,15 +46,15 @@ module.exports = function(babel) {
       .filter(e => e !== undefined);
   }
 
-  // Support dynamic styleName
+  // Support dynamic className
   // TODO: Add support for multiple named imports
   // TODO: Move into a standalone require'able function instead of doing the inline invocation
   // Generates the following:
-  //   styleName={x}
+  //   className={x}
   //   | | |
   //   V V V
   //
-  //   styleName={
+  //   className={
   //     (x || '').split(' ').filter(Boolean).map(function(name) {
   //       return require('react-native-dynamic-style-processor').process(_Button2.default)[name]
   //     }
@@ -66,7 +66,7 @@ module.exports = function(babel) {
   //     Example:
   //       import foo from './Button.css'
   //       let x = 'wrapper' // NOT 'foo.wrapper'
-  //       <View styleName={x} />
+  //       <View className={x} />
   function getStyleFromExpression(expression) {
     var obj = (specifier || randomSpecifier).local.name;
     var expressionResult = t.logicalExpression("||", expression, t.stringLiteral(""));
@@ -148,50 +148,50 @@ module.exports = function(babel) {
           var expressions = null;
 
           if (
-            styleName === null ||
+            className === null ||
             randomSpecifier === null ||
-            !(t.isStringLiteral(styleName.node.value) ||
-            t.isJSXExpressionContainer(styleName.node.value))
+            !(t.isStringLiteral(className.node.value) ||
+            t.isJSXExpressionContainer(className.node.value))
           ) {
             return;
           }
 
-          if (t.isStringLiteral(styleName.node.value)) {
-            var classNames = styleName.node.value.value
+          if (t.isStringLiteral(className.node.value)) {
+            var classNames = className.node.value.value
               .split(" ")
               .filter(v => v.trim() !== "");
             expressions = getStylesFromClassNames(classNames);
-          } else if (t.isJSXExpressionContainer(styleName.node.value)) {
-            expressions = [getStyleFromExpression(styleName.node.value.expression)];
+          } else if (t.isJSXExpressionContainer(className.node.value)) {
+            expressions = [getStyleFromExpression(className.node.value.expression)];
           }
 
-          var hasStyleNameAndStyle =
-            styleName &&
+          var hasclassNameAndStyle =
+            className &&
             style &&
-            styleName.parentPath.node === style.parentPath.node;
+            className.parentPath.node === style.parentPath.node;
 
-          if (hasStyleNameAndStyle) {
+          if (hasclassNameAndStyle) {
             style.node.value = t.arrayExpression(
               expressions.concat([style.node.value.expression])
             );
-            styleName.remove();
+            className.remove();
           } else {
             if (expressions.length > 1) {
-              styleName.node.value = t.arrayExpression(expressions);
+              className.node.value = t.arrayExpression(expressions);
             } else {
-              styleName.node.value = expressions[0];
+              className.node.value = expressions[0];
             }
-            styleName.node.name.name = "style";
+            className.node.name.name = "style";
           }
           style = null;
-          styleName = null;
+          className = null;
           specifier = null;
         }
       },
       JSXAttribute: function JSXAttribute(path, state) {
         var name = path.node.name.name;
-        if (name === "styleName") {
-          styleName = path;
+        if (name === "className") {
+          className = path;
         } else if (name === "style") {
           style = path;
         }
